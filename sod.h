@@ -1,8 +1,12 @@
 #ifndef _SOD_H_
 #define _SOD_H_
+
+#undef SOD_ENABLE_NET_TRAIN
+#define SOD_DISABLE_CNN
+
 /*
 * SOD - An Embedded Computer Vision & Machine Learning Library.
-* Copyright (C) 2018 - 2019 PixLab| Symisc Systems. https://sod.pixlab.io
+* Copyright (C) 2018 - 2020 PixLab| Symisc Systems. https://sod.pixlab.io
 * Version 1.1.8
 *
 * Symisc Systems employs a dual licensing model that offers customers
@@ -286,6 +290,8 @@ SOD_APIEXPORT int sod_img_blob_save_as_bmp(const char * zPath, const unsigned ch
 #define sod_img_load_grayscale(zPath) sod_img_load_from_file(zPath, SOD_IMG_GRAYSCALE)
 #endif /* SOD_DISABLE_IMG_READER */
 
+// lwg
+int sod_bench(void);
 SOD_APIEXPORT float sod_img_get_pixel(sod_img m, int x, int y, int c);
 SOD_APIEXPORT void sod_img_set_pixel(sod_img m, int x, int y, int c, float val);
 SOD_APIEXPORT void sod_img_add_pixel(sod_img m, int x, int y, int c, float val);

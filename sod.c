@@ -1,6 +1,6 @@
 /*
 * SOD - An Embedded Computer Vision & Machine Learning Library.
-* Copyright (C) 2018 - 2019 PixLab| Symisc Systems. https://sod.pixlab.io
+* Copyright (C) 2018 - 2020 PixLab| Symisc Systems. https://sod.pixlab.io
 * Version 1.1.8
 *
 * Symisc Systems employs a dual licensing model that offers customers
@@ -30,7 +30,7 @@
 * You should have received a copy of the GNU General Public License
 * along with SOD. If not, see <http://www.gnu.org/licenses/>.
 */
-/* $SymiscID: sod.c v1.1.8 Win10 2018-02-02 05:34 stable <devel@symisc.net> $ */
+/* $SymiscID: sod.c v1.1.8 Win10 2019-11-16 03:23 stable <devel@symisc.net> $ */
 #ifdef _MSC_VER
 #ifndef _CRT_SECURE_NO_WARNINGS
 /*
@@ -58,16 +58,44 @@
 #ifndef _USE_MATH_DEFINES
 #define _USE_MATH_DEFINES
 #endif /* _USE_MATH_DEFINES */
-#include <math.h>
+/*#include <math.h>*/
+
+/*#define SOD_DISABLE_IMG_READER*/
+#define SOD_DISABLE_IMG_WRITER
+
+#include "math.h"
 #include <string.h>
 #include <limits.h>
 /* Local includes */
 #include "sod.h"
+#include "ctype.h"
+#include "fs.h"
+#include "stat.h"
 /* Forward declaration */
 typedef struct SySet SySet;
 typedef struct SyBlob SyBlob;
 typedef struct SyString SyString;
 typedef struct sod_vfs sod_vfs;
+
+__thread int errno;
+void *stderr;
+
+int ofs_stub(void) {
+	return 0;
+}
+
+void __assert_fail(const char *as, const char *f, unsigned int line, const char*func) {
+	return;
+}
+
+int fwrite(const void *ptrm, size_t size, size_t nmemb, void *stream) {
+	return size;
+}
+
+int fputs(const char *s, void *stream) {
+	return 1;
+}
+
 /*
 * A generic dynamic set.
 */
@@ -190,7 +218,7 @@ struct sod_path_info
 struct sod_vfs {
 	const char *zName;       /* Name of this virtual file system [i.e: Windows, UNIX, etc.] */
 	int iVersion;            /* Structure version number (currently 2.6) */
-	int szOsFile;           
+	int szOsFile;
 	int mxPathname;          /* Maximum file pathname length */
 							 /* Directory functions */
 	int(*xChdir)(const char *);                     /* Change directory */
@@ -1714,6 +1742,7 @@ static const sod_vfs sWinVfs = {
 * Status:
 *    Stable.
 */
+#if 0
 #include <sys/types.h>
 #include <limits.h>
 #ifdef SOD_ENABLE_NET_TRAIN
@@ -1721,14 +1750,15 @@ static const sod_vfs sWinVfs = {
 #else
 #include <time.h>
 #endif /* SOD_ENABLE_NET_TRAIN */
+
 #include <fcntl.h>
 #include <unistd.h>
-#include <sys/uio.h>
 #include <sys/stat.h>
 #include <sys/mman.h>
 #include <sys/file.h>
 #include <dirent.h>
 #include <utime.h>
+#endif
 
 #ifndef PATH_MAX
 #define PATH_MAX 4096
@@ -1868,6 +1898,7 @@ static void UnixVfs_Unmap(void *pView, size_t nSize)
 /* int (*xOpenDir)(const char *, void **) */
 static int UnixDir_Open(const char *zPath, void **ppHandle)
 {
+#if 0
 	DIR *pDir;
 	/* Open the target directory */
 	pDir = opendir(zPath);
@@ -1876,16 +1907,20 @@ static int UnixDir_Open(const char *zPath, void **ppHandle)
 	}
 	/* Save our structure */
 	*ppHandle = pDir;
+#endif
 	return SOD_OK;
 }
 /* void (*xCloseDir)(void *) */
 static void UnixDir_Close(void *pUserData)
 {
+#if 0
 	closedir((DIR *)pUserData);
+#endif 
 }
 /* (*xReadDir)(void *, SyBlob *) */
 static int UnixDir_Read(void *pUserData, SyBlob *pVal)
 {
+#if 0
 	DIR *pDir = (DIR *)pUserData;
 	struct dirent *pEntry;
 	char *zName = 0; /* cc warning */
@@ -1906,12 +1941,15 @@ static int UnixDir_Read(void *pUserData, SyBlob *pVal)
 	}
 	/* Return the current file name */
 	libcox_result_string(pVal, zName, (int)n);
+#endif 
 	return SOD_OK;
 }
 /* void (*xRewindDir)(void *) */
 static void UnixDir_Rewind(void *pUserData)
 {
+#if 0
 	rewinddir((DIR *)pUserData);
+#endif 
 }
 /* float xTicks() */
 static float UnixVfs_get_ticks()
@@ -1924,7 +1962,7 @@ static float UnixVfs_get_ticks()
 	gettimeofday(&time, 0);
 	return (float)time.tv_sec + 1000*time.tv_usec;
 #else
-	return (float)time(0);
+	/*return (float)time(0);*/
 #endif
 }
 /* Export the UNIX vfs */
@@ -4584,6 +4622,21 @@ static inline void im2col_cpu(float* data_im,
 		c++;
 	}
 }
+#ifdef SOD_EMBEDDED_COMMERCIAL_LICENSE
+/* 
+ * Multi-core CPU support for SOD which is available in the commercial version of the library.
+ * You can obtain your commercial license from https://pixlab.io/downloads.
+ *
+ * Advantages includes:
+ *
+ *	Multi-core CPU support for all platforms - Up to 3 ~ 10 times faster processing speed.
+ *	Built-in (C Code), high performance RealNets frontal face detector.
+ *	75 days of integration & technical assistance.
+ *	Royalty-free commercial licenses without any GPL restrictions.
+ *	Application source code stays private.
+ */
+#include "sod_threads.h"
+#else
 static inline void gemm_nn(int M, int N, int K, float ALPHA,
 	float *A, int lda,
 	float *B, int ldb,
@@ -4606,6 +4659,7 @@ static inline void gemm_nn(int M, int N, int K, float ALPHA,
 		i++;
 	}
 }
+#endif /*  SOD_EMBEDDED_COMMERCIAL_LICENSE */
 static inline void gemm_nt(int M, int N, int K, float ALPHA,
 	float *A, int lda,
 	float *B, int ldb,
@@ -7754,7 +7808,7 @@ static tree *read_tree(char *filename)
 	while ((line = fgetl(fp)) != 0) {
 		char *id = calloc(256, sizeof(char));
 		int parent = -1;
-		sscanf(line, "%s %d", id, &parent);
+		/*sscanf(line, "%s %d", id, &parent);*/
 		t.parent = realloc(t.parent, (n + 1) * sizeof(int));
 		t.parent[n] = parent;
 
@@ -10824,11 +10878,11 @@ sod_img sod_canny_edge_image(sod_img im, int reduce_noise)
 		}
 		sobel = sod_make_image(im.w, im.h, 1);
 		out = sod_make_image(im.w, im.h, 1);
-		g = malloc(im.w * im.h * sizeof(int));
-		dir = malloc(im.w * im.h * sizeof(int));
+		g = malloc(im.w *(im.h + 16) * sizeof(int));
+		dir = malloc(im.w *(im.h + 16) * sizeof(int));
 		if (g && dir && sobel.data && out.data) {
-			canny_calc_gradient_sobel(&clean, g, dir);
-			canny_non_max_suppression(&sobel, g, dir);
+			canny_calc_gradient_sobel(&clean, &g[im.w], &dir[im.w]);
+			canny_non_max_suppression(&sobel, &g[im.w], &dir[im.w]);
 			canny_estimate_threshold(&sobel, &high, &low);
 			canny_hysteresis(high, low, &sobel, &out);
 		}
@@ -13576,7 +13630,8 @@ sod_img sod_img_load_from_file(const char *zFile, int nChannels)
 	int w, h, c;
 	int i, j, k;
 	if (SOD_OK != pVfs->xMmap(zFile, &pMap, &sz)) {
-		data = stbi_load(zFile, &w, &h, &c, nChannels);
+		/* lwg: should not be here */
+		/*data = stbi_load(zFile, &w, &h, &c, nChannels);*/
 	}
 	else {
 		data = stbi_load_from_memory((const unsigned char *)pMap, (int)sz, &w, &h, &c, nChannels);
@@ -13959,3 +14014,73 @@ const char * sod_lib_copyright(void)
 {
 	return SOD_LIB_INFO;
 }
+
+static int filter_cb(int w, int h) {
+	/* discard regions of non interest */
+	if ((w > 300 && h > 200)  || w < 45 || h < 45) {
+		return 0;
+	}
+	return 1;
+}
+
+int sod_bench(void)
+{
+	IMSG("hello -- this is your sod bench...\n");
+	int j;
+	for (j = 0; j < 10; j++) {
+		char zInput[32];
+		snprintf(zInput, 32, "/mnt/f2fs/%d.jpg", j);
+		/* Input image (pass a path or use the test image shipped with the samples ZIP archive) */
+		/* const char *zInput = "/mnt/f2fs/track0106[16].jpg"; */
+		/* const char *zInput = "/mnt/f2fs/track0102[03].jpg"; */
+		/* const char *zInput = "/mnt/f2fs/stop.jpg"; */
+		/* Processed output image path */
+		const char *zOut = "/mnt/f2fs/out_plate.png";
+		/* Load the input image in the grayscale colorspace */
+		sod_img imgIn = sod_img_load_grayscale(zInput);
+		if (imgIn.data == 0) {
+			/* Invalid path, unsupported format, memory failure, etc. */
+			return 0;
+		}
+		/* A full color copy of the input image so we can draw rose boxes
+		 * marking the plate in question if any.
+		 */
+		sod_img imgCopy = sod_img_load_color(zInput);
+		/* data execution */
+		/* Obtain a binary image first */
+		sod_img binImg = sod_threshold_image(imgIn, 0.5);
+		/*
+		 * Perform Canny edge detection next which is a mandatory step
+		 */
+		sod_img cannyImg = sod_canny_edge_image(binImg, 1/* Reduce noise */);
+		/*
+		 * Dilate the image say 12 times but you should experiment
+		 * with different values for best results which depend
+		 * on the quality of the input image/frame. */
+		sod_img dilImg = sod_dilate_image(cannyImg, 5);
+		/* Perform connected component labeling or blob detection
+		 * now on the binary, canny edged, Gaussian noise reduced and
+		 * finally dilated image using our filter callback that should
+		 * discard small or large rectangle areas.
+		 */
+		sod_box *box = 0;
+		int i, nbox;
+		sod_image_find_blobs(dilImg, &box, &nbox, filter_cb);
+		/* Draw a box on each potential plate coordinates */
+		for (i = 0; i < nbox; i++) {
+			sod_image_draw_bbox_width(imgCopy, box[i], 5, 255., 0, 225.); // rose box
+		}
+		sod_image_blob_boxes_release(box);
+		/* Finally save the output image to the specified path */
+		/* sod_img_save_as_png(imgCopy, zOut); */
+		/* Cleanup */
+		sod_free_image(imgIn);
+		sod_free_image(cannyImg);
+		sod_free_image(binImg);
+		sod_free_image(dilImg);
+		sod_free_image(imgCopy);
+		}
+	return 0;
+}
+
+
