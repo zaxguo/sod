@@ -14023,21 +14023,18 @@ static int filter_cb(int w, int h) {
 	return 1;
 }
 
-int sod_bench(void)
+int sod_bench(void *img, int len)
 {
 	IMSG("hello -- this is your sod bench...\n");
 	int j;
 	for (j = 0; j < 10; j++) {
-		char zInput[32];
-		snprintf(zInput, 32, "/mnt/f2fs/%d.jpg", j);
-		/* Input image (pass a path or use the test image shipped with the samples ZIP archive) */
-		/* const char *zInput = "/mnt/f2fs/track0106[16].jpg"; */
-		/* const char *zInput = "/mnt/f2fs/track0102[03].jpg"; */
-		/* const char *zInput = "/mnt/f2fs/stop.jpg"; */
+		/* Input image (pass a pointer in TZ) */
+		void *zInput;
+		zInput = img;
 		/* Processed output image path */
 		const char *zOut = "/mnt/f2fs/out_plate.png";
 		/* Load the input image in the grayscale colorspace */
-		sod_img imgIn = sod_img_load_grayscale(zInput);
+		sod_img imgIn = sod_img_load_grayscale(zInput, len);
 		if (imgIn.data == 0) {
 			/* Invalid path, unsupported format, memory failure, etc. */
 			return 0;
@@ -14045,7 +14042,7 @@ int sod_bench(void)
 		/* A full color copy of the input image so we can draw rose boxes
 		 * marking the plate in question if any.
 		 */
-		sod_img imgCopy = sod_img_load_color(zInput);
+		sod_img imgCopy = sod_img_load_color(zInput, len);
 		/* data execution */
 		/* Obtain a binary image first */
 		sod_img binImg = sod_threshold_image(imgIn, 0.5);
